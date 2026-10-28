@@ -33,11 +33,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.openminis.app"
+        applicationId = "com.minisyf.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 37
-        versionName = "1.15"
+        versionCode = 38
+        // minisYf: CI 用 -PversionNameOverride 覆盖
+        versionName = (project.findProperty("versionNameOverride") as String?) ?: "1.15-yf1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -63,7 +64,9 @@ android {
         // prerelease flag and cut a tag at its first '-') see them as version
         // 0 and never offer them. UPDATE_CHANNEL is the channel a fresh
         // install starts on; the user can switch to beta in About.
-        buildConfigField("String", "RELEASE_REPO", "\"OpenMinis/OpenMinis\"")
+        // minisYf: 自更新指向本仓库的 Release（原值是 OpenMinis/OpenMinis，
+        // 不改的话点更新会去拉原版 APK，签名不同会安装失败）
+        buildConfigField("String", "RELEASE_REPO", "\"Gohappyflyy/minisYf\"")
         buildConfigField("String", "UPDATE_CHANNEL", "\"stable\"")
 
         ndk {
@@ -82,6 +85,21 @@ android {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
             version = "3.22.1"
+        }
+    }
+
+    // minisYf: 自签 release 密钥。CI 里由 workflow 把 base64 keystore 解到
+    // $MINISYF_KEYSTORE_PATH 并注入三个密码变量；本地没有这些变量时
+    // 回落到上游的 debug 签名，保证 `./gradlew assembleRelease` 照样能跑。
+    signingConfigs {
+        create("minisyf") {
+            val ksPath = System.getenv("MINISYF_KEYSTORE_PATH")
+            if (!ksPath.isNullOrBlank() && file(ksPath).exists()) {
+                storeFile = file(ksPath)
+                storePassword = System.getenv("MINISYF_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("MINISYF_KEY_ALIAS") ?: "minisyf"
+                keyPassword = System.getenv("MINISYF_KEY_PASSWORD")
+            }
         }
     }
 
@@ -126,7 +144,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // minisYf: CI 注入了 keystore 就用自签，否则沿用上游的 debug 签名
+            signingConfig = if (System.getenv("MINISYF_KEYSTORE_PATH")?.isNotBlank() == true)
+                signingConfigs.getByName("minisyf") else signingConfigs.getByName("debug")
         }
     }
 
