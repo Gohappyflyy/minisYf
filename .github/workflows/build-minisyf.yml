@@ -42,16 +42,11 @@ jobs:
       - name: Android SDK packages
         id: sdk
         run: |
-          set -euo pipefail
-          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-          test -d "$SDK_ROOT" || { echo "::error::no android sdk at $SDK_ROOT"; exit 1; }
-          export ANDROID_HOME="$SDK_ROOT"
-          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
-          SDKM=$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -1)
-          test -n "$SDKM" || { echo "::error::sdkmanager not found"; ls -la "$SDK_ROOT"; exit 1; }
-          echo "sdkmanager: $SDKM"
-          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
-          "$SDKM" --install \
+          export ANDROID_HOME="${ANDROID_SDK_ROOT}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install \
             "platform-tools" \
             "platforms;android-36" \
             "build-tools;36.0.0" \
