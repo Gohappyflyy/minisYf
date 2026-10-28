@@ -42,9 +42,6 @@ jobs:
       - name: Android SDK packages
         id: sdk
         run: |
-          export ANDROID_HOME="${ANDROID_SDK_ROOT}"
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager --install \
             "platform-tools" \
